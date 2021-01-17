@@ -13,33 +13,38 @@ Voici le code du TP sur Space Invaders.
 # TODO  -Faire un cooldown de tir, par exemple de 2 secondes, pour accroître la difficuté
 # TODO  -Faire un îlot de proctection ( ou plusieurs )
 # TODO  -Se charger des erreurs créees par la méthode After de tkinter
-# TODO  -
+# TODO  -Ajouter du son (mon module playsound ne fonctionne pas)
+# TODO  -Régler le bug de l'historique
 # TODO ------------------
 #
 Papa Birahim Seye, 3 ETI, CPE Lyon
 Date: 14/01/2020
 """
 
-from random import randint, uniform
+from random import randint, uniform, choice
 from tkinter import *
 from tkinter.messagebox import showinfo
+import pygame
+
+pygame.mixer.init()  # Initialisation du mixeur qui gère le son
 
 velocity = 5
 wwidth = 1000  # Largeur de la fenêtre
 wheight = 800  # Hauteur de la fenêtre
-bonusList = []
+bonusList = []  # Liste des bonus crées
 
 
 class Ennemy:
 
     def __init__(self, xcor=500, ycor=200):
+        color = choice(["shiny", "simple", "shooter"])  # Choisis une couleur aleatoire pour les ennemis
         """" Ici on initialise le chaque objet de la classe des ennemis, chacun d'eux aura dans l'ordre de définition
         son image (pour le moment la même pour tous), sa coordonnée en X, en Y, sa vélocité, un sens de direction,
         une valeur ( qui s'ajoute aux points du joueur lorsqu'il touche sa cible), une liste de lasers, une variable
         booléenne qui détermine si l'objet est affiché à l'écran ou pas et sa représentation sur ce-dit écran.
         Lors de l'initialisationm les deux fonctions shoot et move sont lancées directement.
         """
-        self.image = PhotoImage(file='Images/ennemy_simple64.png')
+        self.image = PhotoImage(file=f'Images/ennemy_{color}64.png')
         self.xcor = xcor
         self.ycor = ycor
         self.velocity = 5
@@ -99,7 +104,6 @@ class Horde:
         Y initial, un space, qui correspond à l'espace entre deux ennemis, un paramètre line, qui pertmet de créer
         plusieurs lignes en fonction du nombre d'ennemis et la direction, qui sera donnée à chaque ennemis en fonction
         de la ligne sur laquelle il se trouve.
-        La méthode invade est lancée directement lors de l'instanciation de la classe Horde.
         :param number:
         """
         self.soldiers = []
@@ -110,8 +114,6 @@ class Horde:
         self.speed = 20
         self.line = 1
         self.direction = -1
-
-        self.invade()
 
     def invade(self):
         """
@@ -218,6 +220,12 @@ class Player:
             self.lasers += [laser]
             self.speed += 1  # Direction des ennemis quand la vitesse augmente.
 
+        if key == 'c':  # Touche Bonus qui fait offiche de 'code de triche'
+            createBonus()
+
+        if key == 'p':  # Touche Bonus qui fait offiche de 'code de triche'
+            player.score += 100
+
     def pop(self, element):
         """
         Supprimes un laser de la liste de lasers.
@@ -251,6 +259,7 @@ class Laser:
 
         self.move()
         self.autodestroy()
+        sound("lazer")
 
     def move(self):
         """
@@ -376,12 +385,14 @@ def checkLoop():
             if checkCollision(laser, bonus):
                 bonus.pop()
                 player.pop(laser)
+                # sound("bonus")
                 player.score += bonus.value  # Si la collision est confirmée, le score du joueur augmente.
 
         for alien in ennemies.soldiers:
             if checkCollision(laser, alien):
                 ennemies.pop(alien)
                 player.pop(laser)
+                # sound("explosion")
                 player.score += alien.value  # Si la collision est confirmée, le score du joueur augmente.
                 checkWin()  # On vérifie qu'il ne reste plus d'ennemis
                 #  ennemies.setspeed(velocity) Ici on devrait augmenter la vitesse à chaque fois qu'un ennemi tombe au
@@ -399,11 +410,30 @@ def checkLoop():
 
             if checkCollision(laser, player):  # Si un laser ennemi touche le joueur, il perd un point de vie
                 player.lives -= 1
+                soldier.pop(laser)
                 if player.lives == 0:
                     endGame()
                     showinfo(title="Lost", message="Humanity has been destroy !")  # Message affiché en cas de defaite
 
     mainwindow.after(50, checkLoop)
+
+
+def sound(soundname):
+    """
+    Dans cette fonction on devrait pouvoir jouer un son, elle serait appelée à chaque fois que nécessaire comme par
+    exemple lors d'un tir (en jouant le fichier sounds/lazer.mp3. Malheuresement le module ne fonctionne pas.
+    Edit: J'ai réussi à faire marcher playsound.
+    Edit2: Le module playground met en pause la mainloop de la fenêtre,du coup à chaque fois qu'on joue un son, le jeu
+            se met en pause. J'ai donc utilisé la bibliothèque Pygame, et ca marche correctement.
+    Edit3: Il n'y a que le son du laser qui est joué, les autres ne sont pas chargés par le mixer. Je les ai mis en
+            commentaire.
+    :param soundname: Nom du fichier
+    :return:
+    """
+
+    # playsound(f"sounds/{soundname}.mp3")
+    pygame.mixer.music.load(f"sounds/{soundname}.mp3")
+    pygame.mixer.music.play()
 
 
 def createBonus():
@@ -444,7 +474,9 @@ def checkWin():
     """
     if len(ennemies.soldiers) == 0:
         showinfo(title="Victory", message="You saved the humanity !")
+        saveScore()
         endGame()
+        showScore()
 
     elif player.lives == 0:
         showinfo(title="Lost", message="Humanity has been destroy !")
@@ -486,13 +518,48 @@ def endGame():
     ennemies.reset()
 
 
+def saveScore():
+    """
+    Cette fonction permet d'enregistrer un score en cas de victoire
+    :return:
+    """
+    with open("scores.txt", "a") as score:
+        line = f"{player.score}/{player.lives}\n"
+        score.writelines(line)
+
+
+def showScore():
+    """
+    La fonction affiche les scores enregistrés dans le fichier score.txt
+    :return:
+    """
+    with open("scores.txt", "r") as score:
+        index = 1
+        for line in score.readlines():
+            infos = line.split(sep="/")
+            write = f"Score: {infos[0]} | Lives: {infos[1]}"
+            history.insert(index, write)
+            index += 1
+
+
+def showAbout():
+    """
+    Voici le fameux 'À propros ...'.
+    :return:
+    """
+    endGame()
+    showinfo(title="About...", message="You can try to press 'c' or 'p',  thank me later ;)")
+
+def showOptions():
+    """
+    À terminer.
+    :return:
+    """
+    endGame()
+    showinfo(title="Options", message="Options are coming soon...")
+
 mainwindow = Tk()  # Création de la fenêtre.
 mainwindow.title("Space Invaders 2020")
-
-menu = Menu(mainwindow, tearoff=0)
-menub1 = Menubutton(menu, text="Menu A")
-menub2 = Menubutton(menu, text="Menu B")
-menub3 = Menubutton(menu, text="Menu B")
 
 gameplace = Frame(mainwindow)  # Frame dans laquelle le jeu et les commandes se trouveront.
 gameplace.pack(side=LEFT)
@@ -512,27 +579,67 @@ place.bind("<Key>", player.action)  # Permet de gérer les événements du joueu
 
 ui = UI()  # Création de l'interface graphique dans le canvas.
 
-uiplace = Frame(mainwindow)  # Deuxième interface graphique, celle qui contient les bouttons.
+
+gameFrame = LabelFrame(mainwindow,
+                       text="Game")
+gameFrame.pack()
+
+
+uiplace = Frame(gameFrame)  # Deuxième interface graphique, celle qui contient les bouttons.
 uiplace.pack(side=RIGHT)  # On place cette interface sur la gauche.
 
-startButton = Button(uiplace,
+historyFrame = LabelFrame(uiplace)
+historyFrame.pack()
+
+historyLabel = Label(historyFrame,
+                     text="History")
+historyLabel.pack()
+
+history = Listbox(historyFrame, height=5)
+history.pack()
+
+
+controlsFrame = LabelFrame(uiplace,
+                           text="------------Controls------------",
+                           width=100,
+                           height=90)
+controlsFrame.pack()
+
+startButton = Button(controlsFrame,
                      text='Start',
                      command=startGame)  # Boutton qui lance une partie
-startButton.pack()
+startButton.pack(side=LEFT)
 
-endButton = Button(uiplace,
+endButton = Button(controlsFrame,
                    text='End',
                    command=endGame)  # Boutton qui arrête une partie
-endButton.pack()
+endButton.pack(side=LEFT)
 
-quitButton = Button(uiplace,
+quitButton = Button(controlsFrame,
                     text='Quit',
                     command=close_window)  # Boutton qui permet de quitter
-quitButton.pack()
+quitButton.pack(side=RIGHT)
+
+optionsFrame = LabelFrame(mainwindow,
+                          text="----------------More----------------")
+optionsFrame.pack()
+
+
+optionsButton = Button(optionsFrame,
+                       text="Options",
+                       command=showOptions)
+optionsButton.pack(side=RIGHT)
+
+
+aboutButton = Button(optionsFrame,
+                     text="About...",
+                     command= showAbout)
+aboutButton.pack(side=LEFT)
 
 ennemies = Horde(number=10)  # Création de la horde d'ennemis
 
 checkLoop()  # Vérifie continuellement les collisions
 bonusMaker()  # Crée un bonus de manière aleatoire
+showScore()  # Affiche l'historique des scores
 
 mainwindow.mainloop()  # Boucle principale de la fenêtre

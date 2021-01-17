@@ -550,6 +550,7 @@ def showAbout():
     endGame()
     showinfo(title="About...", message="You can try to press 'c' or 'p',  thank me later ;)")
 
+
 def showOptions():
     """
     À terminer.
@@ -557,6 +558,7 @@ def showOptions():
     """
     endGame()
     showinfo(title="Options", message="Options are coming soon...")
+
 
 mainwindow = Tk()  # Création de la fenêtre.
 mainwindow.title("Space Invaders 2020")
@@ -633,7 +635,7 @@ optionsButton.pack(side=RIGHT)
 
 aboutButton = Button(optionsFrame,
                      text="About...",
-                     command= showAbout)
+                     command=showAbout)
 aboutButton.pack(side=LEFT)
 
 ennemies = Horde(number=10)  # Création de la horde d'ennemis

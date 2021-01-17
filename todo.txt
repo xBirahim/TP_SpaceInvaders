@@ -1,0 +1,23 @@
+Classes :
+- Player
+    _Gestion des collisions
+    _Associer une image
+
+- Laser
+    _Gestion des collisions
+    _Associer une image
+
+- Ennmy
+    _Gestion des collisions
+    _Associer une image
+
+-\-\-\-\-\-\-\-\-\-
+
+- Créer une classe Horde (ensemble des différents ennemis)
+- Créer des sous-classes de Ennemy ( Ennemis plus puissants, etc)
+- Creer une classe bonus (rapid fire, invincibilité etc)
+
+
+-\-\-\-\-\-\-\-\-\-
+
+- Regler le bug de la horde ( tous les ennemis tournent vers la droite quand la vitesse accelere)
